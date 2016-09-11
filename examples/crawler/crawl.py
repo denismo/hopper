@@ -7,16 +7,6 @@ __author__ = 'Denis Mikhalkin'
 
 context = Context()
 
-# TODO Exception handling - if error occurs, message is retried X number of times
-# TODO Stop signal
-# TODO Queue types
-# TODO Remove priority, replace with explicit queue name
-# TODO Logging
-# TODO Error handling
-# TODO Command line: deploy, start, stop
-# TODO Allow multiple handlers per message
-# TODO CollectAs - specify message type
-
 @context.webHandler("webRequest")
 @context.message("pageUrl")
 def pageUrl(msg):

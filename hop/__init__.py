@@ -1,6 +1,15 @@
-from heapq import heappop, heappush
-
 __author__ = 'Denis Mikhalkin'
+
+# TODO Exception handling - if error occurs, message is retried X number of times
+# TODO Stop signal
+# TODO Queue types
+# TODO Remove priority, replace with explicit queue name
+# TODO Logging
+# TODO Error handling
+# TODO Command line: deploy, start, stop
+# TODO Allow multiple handlers per message
+# TODO CollectAs - specify message type
+
 
 # http://stackoverflow.com/questions/1857780/sparse-assignment-list-in-python
 class SparseList(list):
@@ -13,13 +22,18 @@ class SparseList(list):
         try: return list.__getitem__(self, index)
         except IndexError: return None
 
+class ContextConfig(object):
+    def __init__(self):
+        self.autoStop = False
+        self.autoStopLimit = 0
+
+
 class Context(object):
-    def __init__(self, autoStop=False, autoStopLimit=100):
+    def __init__(self, config=None):
+        self.config = config or ContextConfig()
         self.rules = dict(filter=dict(), handler=dict())
         self.terminated = False
         self.queues = SparseList()
-        self.autoStop = autoStop
-        self.autoStopLimit = autoStopLimit
         self.requestCount = 0
 
     def _register(self, rule, kind, callback, order=None):
@@ -35,8 +49,8 @@ class Context(object):
 
     def _checkForStop(self):
         self.requestCount += 1
-        if self.autoStop and self.requestCount > self.autoStopLimit:
-            print "Stopping because of limit on requests %s" % self.autoStopLimit
+        if self.config.autoStop and self.requestCount > self.config.autoStopLimit:
+            print "Stopping because of limit on requests %s" % self.config.autoStopLimit
             return True
         return False
 
@@ -120,7 +134,7 @@ class Context(object):
     def stop(self):
         self.terminated = True
 
-    def forget(self, msgs, condition):
+    def forget(self, msgs):
         pass
 
 

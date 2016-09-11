@@ -1,10 +1,13 @@
+from examples.analytics import lookupUserAgent, incrementPageView, incrementUserCounter, parsePath
+from hop.kinesis import LambdaContext
+
 __author__ = 'Denis Mikhalkin'
 
 from hop import Context
 
 # Use case: web analytics (page views, unique users, geo ip lookup (block), user lookup(block), user agent lookup(block))
 
-context = Context()
+context = LambdaContext()
 
 @context.webHandler("webRequest")
 @context.message('pageView')
@@ -59,7 +62,11 @@ def collectPageViews(msgs):
     # Increment page views recording device country
     incrementPageView(path, country)
 
+# Default handler for Lambda implementation
+def lambda_handler(event, lambda_context):
+    context.lambda_handler(event, lambda_context)
 
 if __name__ == '__main__':
+    # Using default implementation for testing
     context.publish(dict(messageType='pageView', url='http://abc.com', cookie='abc', userAgent='Chrome'))
     context.run()
