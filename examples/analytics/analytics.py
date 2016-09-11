@@ -1,13 +1,18 @@
 from examples.analytics import lookupUserAgent, incrementPageView, incrementUserCounter, parsePath
 from hop.kinesis import LambdaContext
+from hop.local import LocalContext
 
 __author__ = 'Denis Mikhalkin'
 
-from hop import Context
+from hop import Context, ContextConfig
 
 # Use case: web analytics (page views, unique users, geo ip lookup (block), user lookup(block), user agent lookup(block))
 
-context = LambdaContext()
+if __name__ == '__main__':
+    context = LocalContext(ContextConfig(autoStop=True, autoStopLimit=100))
+else:
+    # By default, make sure the sample stops on Lambdato avoid incurring costs
+    context = LambdaContext(ContextConfig(autoStop=True, autoStopLimit=100))
 
 @context.webHandler("webRequest")
 @context.message('pageView')

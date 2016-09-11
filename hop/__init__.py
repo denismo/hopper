@@ -11,32 +11,20 @@ __author__ = 'Denis Mikhalkin'
 # TODO CollectAs - specify message type
 
 
-# http://stackoverflow.com/questions/1857780/sparse-assignment-list-in-python
-class SparseList(list):
-    def __setitem__(self, index, value):
-        missing = index - len(self) + 1
-        if missing > 0:
-            self.extend([None] * missing)
-        list.__setitem__(self, index, value)
-    def __getitem__(self, index):
-        try: return list.__getitem__(self, index)
-        except IndexError: return None
-
 class ContextConfig(object):
-    def __init__(self):
-        self.autoStop = False
-        self.autoStopLimit = 0
+    def __init__(self, autoStop=False, autoStopLimit=0):
+        self.autoStop = autoStop
+        self.autoStopLimit = autoStopLimit
 
 
 class Context(object):
     def __init__(self, config=None):
         self.config = config or ContextConfig()
-        self.rules = dict(filter=dict(), handler=dict())
+        self.rules = dict(filter=dict(), handler=dict(), reduce=dict())
         self.terminated = False
-        self.queues = SparseList()
         self.requestCount = 0
 
-    def _register(self, rule, kind, callback, order=None):
+    def _register(self, rule, kind, callback, order=None, condition=None):
         print "Registering %s %s -> %s" % (kind, rule, callback)
         if rule not in self.rules[kind]:
             self.rules[kind][rule] = [callback]
@@ -76,33 +64,8 @@ class Context(object):
         return msg
 
     def _invokeRule(self, rule, kind, msg):
-        self.rules[kind][rule][0](msg)
-
-    def run(self):
-        while True:
-            found = False
-            for index in range(len(self.queues)):
-                queue = self.queues[index]
-                if queue is not None and len(queue) != 0:
-                    found = True
-                    self._process(queue.pop(0))
-                    break
-            if not found:
-                break
-
-    def publish(self, msg):
-        if self.terminated:
-            return
-        if 'priority' in msg:
-            priority = msg['priority']
-        else:
-            priority = 1
-        queue = self.queues[priority]
-        if queue is None:
-            queue = []
-            self.queues[priority] = queue
-        queue.append(msg)
-
+        for callback in self.rules[kind][rule]:
+            callback(msg)
 
     def webHandler(self, rule):
         # TODO Register web rule
@@ -111,8 +74,8 @@ class Context(object):
         return caller
 
     def message(self, rule):
-        if self._containsRule(rule, 'handler'):
-            raise Exception('Duplicate handler for rule ' + rule)
+        # if self._containsRule(rule, 'handler'):
+        #     raise Exception('Duplicate handler for rule ' + rule)
         def caller(f):
             self._register(rule, 'handler', f)
             return f
@@ -130,12 +93,15 @@ class Context(object):
             return f
         return caller
 
-
     def stop(self):
         self.terminated = True
 
     def forget(self, msgs):
         pass
+
+    def publish(self, msg):
+        if self.terminated:
+            return
 
 
 
