@@ -55,7 +55,7 @@ def resolveUserAgent(msg):
 
 # Alternative to .collect - collect all message which have the same parentMessageID
 # This method will receive original 'enrichedPageView' messages, first each one of them, and eventually all of them
-@context.reduce(message='enrichedPageView', condition='parentMessageID', discard='5s')
+@context.join(message='enrichedPageView', condition='parentMessageID', discard='5s')
 def collectPageViews(msgs):
     if not msgs.checkFieldsInMessages('country', 'deviceType'):
         return

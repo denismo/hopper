@@ -20,9 +20,10 @@ class LocalContext(Context):
         self.queues = SparseList()
 
     def run(self):
-        while True:
+        while not self.terminated:
             found = False
             for index in range(len(self.queues)):
+                if self.terminated: return
                 queue = self.queues[index]
                 if queue is not None and len(queue) != 0:
                     found = True

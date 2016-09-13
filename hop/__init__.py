@@ -1,5 +1,8 @@
 __author__ = 'Denis Mikhalkin'
 
+# TODO Unit test: Filter, Join, Collect, Merge
+# TODO Request count should be extracted as it differs between local and Kinesis modes
+# TODO Stop signal should be extract as it differs between local and Kinesis modes
 # TODO Exception handling - if error occurs, message is retried X number of times
 # TODO Stop signal
 # TODO Queue types
@@ -7,9 +10,7 @@ __author__ = 'Denis Mikhalkin'
 # TODO Logging
 # TODO Error handling
 # TODO Command line: deploy, start, stop
-# TODO Allow multiple handlers per message
 # TODO CollectAs - specify message type
-
 
 class ContextConfig(object):
     def __init__(self, autoStop=False, autoStopLimit=0):
@@ -20,7 +21,7 @@ class ContextConfig(object):
 class Context(object):
     def __init__(self, config=None):
         self.config = config or ContextConfig()
-        self.rules = dict(filter=dict(), handler=dict(), reduce=dict())
+        self.rules = dict(filter=dict(), handler=dict(), join=dict())
         self.terminated = False
         self.requestCount = 0
 
@@ -37,6 +38,8 @@ class Context(object):
 
     def _checkForStop(self):
         self.requestCount += 1
+        if self.terminated:
+            return True
         if self.config.autoStop and self.requestCount > self.config.autoStopLimit:
             print "Stopping because of limit on requests %s" % self.config.autoStopLimit
             return True
@@ -57,6 +60,7 @@ class Context(object):
         if msg['messageType'] in filters:
             filterCallbacks = filters[msg['messageType']]
             for callback in filterCallbacks:
+                if self.terminated: return None
                 # TODO Error handling
                 msg = callback(msg)
                 if msg is None:
@@ -65,6 +69,7 @@ class Context(object):
 
     def _invokeRule(self, rule, kind, msg):
         for callback in self.rules[kind][rule]:
+            if self.terminated: return
             callback(msg)
 
     def webHandler(self, rule):
@@ -87,7 +92,7 @@ class Context(object):
             return f
         return caller
 
-    def reduce(self, condition, message=None, discard=None, minimumCount=1):
+    def join(self, condition, message=None, discard=None, minimumCount=1):
         def caller(f):
             self._register(message, 'reduce', f, condition=condition)
             return f
