@@ -1,8 +1,6 @@
 __author__ = 'Denis Mikhalkin'
 
 # TODO Unit test: Filter, Join, Collect, Merge
-# TODO Request count should be extracted as it differs between local and Kinesis modes
-# TODO Stop signal should be extract as it differs between local and Kinesis modes
 # TODO Exception handling - if error occurs, message is retried X number of times
 # TODO Stop signal
 # TODO Queue types
@@ -22,8 +20,8 @@ class Context(object):
     def __init__(self, config=None):
         self.config = config or ContextConfig()
         self.rules = dict(filter=dict(), handler=dict(), join=dict())
-        self.terminated = False
-        self.requestCount = 0
+
+    ######### Internals ################
 
     def _register(self, rule, kind, callback, order=None, condition=None):
         print "Registering %s %s -> %s" % (kind, rule, callback)
@@ -37,10 +35,9 @@ class Context(object):
         return rule in self.rules[kind]
 
     def _checkForStop(self):
-        self.requestCount += 1
-        if self.terminated:
+        if self._getTerminated():
             return True
-        if self.config.autoStop and self.requestCount > self.config.autoStopLimit:
+        if self.config.autoStop and self._getRequestCount() > self.config.autoStopLimit:
             print "Stopping because of limit on requests %s" % self.config.autoStopLimit
             return True
         return False
@@ -69,8 +66,21 @@ class Context(object):
 
     def _invokeRule(self, rule, kind, msg):
         for callback in self.rules[kind][rule]:
-            if self.terminated: return
+            if self._getTerminated(): return
             callback(msg)
+
+    ######### Overides #########
+
+    def _getTerminated(self):
+        raise NotImplemented("_getTerminated is not implemented by default")
+
+    def _getRequestCount(self):
+        raise NotImplemented("_getRequestCount is not implemented by default")
+
+    def _incrementRequestCount(self):
+        raise NotImplemented("_incrementRequestCount is not implemented by default")
+
+    ######### Wrappers #############
 
     def webHandler(self, rule):
         # TODO Register web rule
@@ -98,8 +108,11 @@ class Context(object):
             return f
         return caller
 
+
+    ########### Actions #############
+
     def stop(self):
-        self.terminated = True
+        pass
 
     def forget(self, msgs):
         pass

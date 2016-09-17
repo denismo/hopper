@@ -18,6 +18,17 @@ class LocalContext(Context):
     def __init__(self, config=None):
         Context.__init__(self, config)
         self.queues = SparseList()
+        self.requestCount = 0
+        self.terminated = False
+
+    def _incrementRequestCount(self):
+        self.requestCount += 1
+
+    def _getRequestCount(self):
+        return self.requestCount
+
+    def _getTerminated(self):
+        return self.terminated
 
     def run(self):
         while not self.terminated:
@@ -31,6 +42,8 @@ class LocalContext(Context):
                     break
             if not found:
                 break
+    def stop(self):
+        self.terminated = True
 
     def publish(self, msg):
         if self.terminated:
