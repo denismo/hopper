@@ -1,4 +1,8 @@
+from __future__ import print_function
 __author__ = 'Denis Mikhalkin'
+
+import logging
+logger = logging.getLogger()
 
 # TODO Unit test: Filter, Join, Collect, Merge
 # TODO Exception handling - if error occurs, message is retried X number of times
@@ -11,9 +15,11 @@ __author__ = 'Denis Mikhalkin'
 # TODO CollectAs - specify message type
 
 class ContextConfig(object):
-    def __init__(self, autoStop=False, autoStopLimit=0):
+    def __init__(self, autoStop=False, autoStopLimit=0, dynamoDBRegion='', kinesisRegion=''):
         self.autoStop = autoStop
         self.autoStopLimit = autoStopLimit
+        self.dynamoDBRegion = dynamoDBRegion
+        self.kinesisRegion = kinesisRegion
 
 
 class Context(object):
@@ -24,7 +30,7 @@ class Context(object):
     ######### Internals ################
 
     def _register(self, rule, kind, callback, order=None, condition=None):
-        print "Registering %s %s -> %s" % (kind, rule, callback)
+        logger.info("Registering %s %s -> %s", kind, rule, callback)
         if rule not in self.rules[kind]:
             self.rules[kind][rule] = [callback]
         else:
@@ -38,17 +44,17 @@ class Context(object):
         if self._getTerminated():
             return True
         if self.config.autoStop and self._getRequestCount() > self.config.autoStopLimit:
-            print "Stopping because of limit on requests %s" % self.config.autoStopLimit
+            logger.info("Stopping because of limit on requests %s", self.config.autoStopLimit)
             return True
         return False
 
     def _process(self, msg):
         if self._checkForStop(): return
         if msg is not None:
-            if type(msg) == dict:
-                if 'messageType' in msg and self._containsRule(msg['messageType'], 'handler'):
-                    msg = self._filterMsg(msg)
-                    if msg is not None:
+            if type(msg) == dict and 'messageType' in msg:
+                msg = self._filterMsg(msg)
+                if msg is not None:
+                    if self._containsRule(msg['messageType'], 'handler'):
                         # TODO Error handling
                         self._invokeRule(msg['messageType'], 'handler', msg)
 
@@ -96,7 +102,7 @@ class Context(object):
             return f
         return caller
 
-    def filter(self, rule, order):
+    def filter(self, rule, order=None):
         def caller(f):
             self._register(rule, 'filter', f, order=order)
             return f

@@ -1,16 +1,23 @@
-from db import isUrlProcessed, markUrlProcessed
-from hop import Context
-from html import extractUrls
-from webio import download
+from __future__ import print_function
+from examples.crawler.db import isUrlProcessed, markUrlProcessed
+from hop import Context, ContextConfig
+from hop.local import LocalContext
+from hop.kinesis import LambdaContext
+from examples.crawler.html import extractUrls
+from examples.crawler.webio import download
 
 __author__ = 'Denis Mikhalkin'
 
-context = Context()
+if __name__ == '__main__':
+    context = LocalContext(ContextConfig(autoStop=True, autoStopLimit=100))
+else:
+    # By default, make sure the sample stops on Lambdato avoid incurring costs
+    context = LambdaContext(ContextConfig(autoStop=True, autoStopLimit=100, dynamoDBRegion='ap-southeast-2', kinesisRegion='ap-southeast-2'))
 
 @context.webHandler("webRequest")
 @context.message("pageUrl")
 def pageUrl(msg):
-    print "pageUrl %s" % msg
+    print("pageUrl %s" % msg)
     if msg['url'] is not None:
         # TODO Check if URL has been processed
         if not isUrlProcessed(msg['url']):
@@ -21,7 +28,7 @@ def pageUrl(msg):
 
 @context.message('pageBody')
 def pageBody(msg): # TODO Unwrap parameters
-    print "pageBody %s" % msg
+    print("pageBody %s" % msg)
     if msg['body'] is not None:
         urls = extractUrls(msg['body'])
         for url in urls:
@@ -38,6 +45,10 @@ def urlFilter(msg):
 @context.filter('pageUrl', 0)
 def nopFilter(msg):
     return msg
+
+# Default handler for Lambda implementation
+def lambda_handler(event, lambda_context):
+    context.lambda_handler(event, lambda_context)
 
 if __name__ == '__main__':
     context.publish(dict(messageType='pageUrl', url='http://abc.com'))
