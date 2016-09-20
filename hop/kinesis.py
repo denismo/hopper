@@ -5,7 +5,8 @@ import uuid
 
 from hop import Context
 import logging
-logger = logging.getLogger()
+logger = logging.getLogger("hopper.kinesis")
+logger.setLevel(logging.INFO)
 
 __author__ = 'Denis Mikhalkin'
 
@@ -22,14 +23,18 @@ class LambdaContext(Context):
         self.table = dynamodb.Table('HopperRuntime')
 
     def _incrementRequestCount(self):
-        table.update_item(
+        self.table.update_item(
             Key={
                 'Object': 'RuntimeState',
             },
-            UpdateExpression="set RequestCounter = RequestCounter + :val",
-            ExpressionAttributeValues={
-                ':val': 1
+            AttributeUpdates={
+                'RequestCounter': {'Action': 'ADD',
+                'Value': 1}                
             }
+            # UpdateExpression="set RequestCounter = RequestCounter + :val",
+            # ExpressionAttributeValues={
+            #     ':val': 1
+            # }
         )        
 
     def _getRequestCount(self):
@@ -43,8 +48,8 @@ class LambdaContext(Context):
             print(e.response['Error']['Message'])
             return 0
         else:
-            item = response['Item']
-            return item['RequestCounter']
+            item = response['Item'] if 'Item' in response else None
+            return item['RequestCounter'] if item is not None and 'RequestCounter' in item else 0
 
     def _getTerminated(self):
         try:
@@ -57,18 +62,30 @@ class LambdaContext(Context):
             print(e.response['Error']['Message'])
             return 0
         else:
-            item = response['Item']
-            return item['Terminated']
+            item = response['Item'] if 'Item' in response else None
+            return item['Terminated'] if item is not None and 'Terminated' in item else False
 
     def lambda_handler(self, event, context):
-        logging.info("Lambda handler got called")
-        for record in event['Records']:
-            payload = base64.b64decode(record['kinesis']['data'])
+        logger.info("Lambda handler got called with %s%s", type(event), json.dumps(event))
+        if event is not None and 'Records' in event:
+            for record in event['Records']:
+                payload = base64.b64decode(record['kinesis']['data'])
+                try:
+                    self._process(json.loads(payload))
+                except:
+                    logger.exception("Unable to process message " + str(payload))
+                    pass
+        else:
             try:
-                self._process(json.loads(payload))
+                if type(event) == str:
+                    self._process(json.loads(event))
+                elif type(event) == dict:
+                    self._process(event)
+                else:
+                    logger.error("Unexpected type of message: %s" % type(event))
             except:
-                logger.exception("Unable to process message " + str(payload))
-                pass
+                logger.exception("Unable to process message " + str(event))
+                pass            
 
     def stop(self):
         logger.info("Stopping the hopper")

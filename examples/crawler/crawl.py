@@ -8,6 +8,10 @@ from examples.crawler.webio import download
 
 __author__ = 'Denis Mikhalkin'
 
+import logging
+logger = logging.getLogger("hopper.crawler")
+logger.setLevel(logging.INFO)
+
 if __name__ == '__main__':
     context = LocalContext(ContextConfig(autoStop=True, autoStopLimit=100))
 else:
@@ -17,27 +21,35 @@ else:
 @context.webHandler("webRequest")
 @context.message("pageUrl")
 def pageUrl(msg):
-    print("pageUrl %s" % msg)
-    if msg['url'] is not None:
+    logger.info("pageUrl %s" % msg)
+    if 'url' in msg and msg['url'] is not None:
         # TODO Check if URL has been processed
         if not isUrlProcessed(msg['url']):
             body = download(msg['url'])
             markUrlProcessed(msg['url'])
             if body is not None:
                 context.publish(dict(messageType='pageBody', body=body))
+            else:
+                logger.debug('Body is None')
+        else:
+            logger.debug('URL has been processed')
+    else:
+        logger.warn('url is None in pageUrl(msg)')
 
 @context.message('pageBody')
 def pageBody(msg): # TODO Unwrap parameters
-    print("pageBody %s" % msg)
-    if msg['body'] is not None:
+    logger.info("pageBody %s" % msg)
+    if 'body' in msg and msg['body'] is not None:
         urls = extractUrls(msg['body'])
         for url in urls:
             if not isUrlProcessed(url):
                 context.publish(dict(messageType='pageUrl', url=url, priority=(0 if url.startswith('https') else 1)))
+    else:
+        logger.warn('body is None in pageBody(msg)')
 
 @context.filter('pageUrl', 1)
 def urlFilter(msg):
-    if msg['url'] is not None and not msg['url'].find('au-mg6') != -1:
+    if 'url' in msg and msg['url'] is not None and not msg['url'].find('au-mg6') != -1:
         return msg
     else:
         return None

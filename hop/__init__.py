@@ -2,7 +2,8 @@ from __future__ import print_function
 __author__ = 'Denis Mikhalkin'
 
 import logging
-logger = logging.getLogger()
+logger = logging.getLogger("hopper.base")
+logger.setLevel(logging.INFO)
 
 # TODO Unit test: Filter, Join, Collect, Merge
 # TODO Exception handling - if error occurs, message is retried X number of times
@@ -49,6 +50,7 @@ class Context(object):
         return False
 
     def _process(self, msg):
+        self._incrementRequestCount()
         if self._checkForStop(): return
         if msg is not None:
             if type(msg) == dict and 'messageType' in msg:
@@ -63,7 +65,7 @@ class Context(object):
         if msg['messageType'] in filters:
             filterCallbacks = filters[msg['messageType']]
             for callback in filterCallbacks:
-                if self.terminated: return None
+                if self._getTerminated(): return None
                 # TODO Error handling
                 msg = callback(msg)
                 if msg is None:
