@@ -257,3 +257,6 @@ The deployment user need the following permissions:
             ]
         }
 
+License
+=======
+[Apache License 2.0](LICENSE)
