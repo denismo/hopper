@@ -1,57 +1,114 @@
 Hopper
 ======
 
-Hopper is a library that allows writing message-driven distributed applications in Python, deployed on AWS Lambda.
+Hopper is a framework that allows writing message-driven distributed applications in Python, deployed on AWS Lambda.
 It removes the boilerplate code associated with message passing, queueing, matching and so on, letting you focus on the business logic of message handlers.
-It inspired by [Akka actors](http://doc.akka.io/docs/akka/snapshot/intro/what-is-akka.html, [Chalice](https://github.com/awslabs/chalice), and [GigaSpaces](http://www.gigaspaces.com/).
+It inspired by [Akka actors](http://doc.akka.io/docs/akka/snapshot/intro/what-is-akka.html), [AWSLabs Chalice](https://github.com/awslabs/chalice), and [GigaSpaces](http://www.gigaspaces.com/).
 
 Usage scenarios
 ===============
 - A web crawler
 - Analytics
-- Distributed realtime processing graphs (the ones you'd write in [Apache Storm](http://storm.apache.org/)
+- Distributed realtime processing graphs (the ones you'd write in [Apache Storm](http://storm.apache.org/))
 
 Design
 ======
 
-The key input into the library is a message handler, associated with a certain message type. 
+The key input into the framework is a message handler, associated with a certain message type. 
 The library ensures that when the message of such type is received, it is dispatched to the handler.
 
 It does that by managing message queue (currently Kinesis), and providing primitives for declaring handlers and firing messages.
-Eventually, it is also meant to work together with something like Chaline or Serveless, receiving messages initially via Web API, 
+Eventually, it is also meant to work together with something like Chalice or Serverless, receiving messages initially via Web API, 
 and then injecting them into message queue. 
 
 All processing is happening on AWS Lambda so there are no servers. The library uses Kinesis (queue) and DynamoDB (status, statistics, some state). 
+
+Features
+=======
+Here is a small example of the framework in action:
+
+Message type handler
+--------------------
+
+- the pageUrl handler receives `pageUrl` messages, does quick processing downloading the page body, and fires the body message
+- the pageBody handler receives `pageBody` messages, parse the body, and fires `pageUrl` message for each found URL  
+
+```python
+@context.message("pageUrl")
+def pageUrl(msg):
+    logger.info("pageUrl %s" % msg)
+    if 'url' in msg and msg['url'] is not None:
+        if not isUrlProcessed(msg['url']):
+            body = download(msg['url'])
+            markUrlProcessed(msg['url'])
+            if body is not None:
+                context.publish(dict(messageType='pageBody', body=body))
+            else:
+                logger.debug('Body is None')
+        else:
+            logger.debug('URL has been processed')
+    else:
+        logger.warn('url is None in pageUrl(msg)')
+
+
+@context.message('pageBody')
+def pageBody(msg): # 
+    logger.info("pageBody %s" % msg)
+    if 'body' in msg and msg['body'] is not None:
+        urls = extractUrls(msg['body'])
+        for url in urls:
+            if not isUrlProcessed(url):
+                context.publish(dict(messageType='pageUrl', url=url, priority=(0 if url.startswith('https') else 1)))
+    else:
+        logger.warn('body is None in pageBody(msg)')
+```
+
+Filter (executed before handlers)
+-------
+
+This ia a simple filter that stops processing of `pageURL` messages containing certain URLs by returning None. 
+
+```python
+@context.filter('pageUrl', 1)
+def urlFilter(msg):
+    if 'url' in msg and msg['url'] is not None and not msg['url'].find('au-mg6') != -1:
+        return msg
+    else:
+        return None
+```
 
 Installation
 ============
 
 Requires:
-- Python 2.7
-- Boto 3
-- Python-lambda 0.4+ (deployment only)
+
+    - Python 2.7
+    - Boto 3
+    - Python-lambda 0.4+ (deployment only)
+
 
 1. Create a virtual environment
-2. Install dependencies into it:
+1. Install dependencies into it:
 
-    pip install -r requirements.txt
+        pip install -r requirements.txt
 
-3. Activate virtual environment
-4. Set AWS profile of the deployment user (below)
-5. Deploy the demo crawler applications
+1. Activate virtual environment
+1. Set AWS profile of the deployment user (below)
+1. Deploy the demo crawler applications
 
-    python hop/run.py deploy
+        python hop/run.py deploy
 
-6. Go into AWS Lambda console, locate the "hopper" function and add test input
+1. Go into AWS Lambda console, locate the `hopper` function and add test input
 
-    {
-        "messageType":"pageUrl",
-        "url":"http://abc.com"
-    }
+        {
+            "messageType":"pageUrl",
+            "url":"http://abc.com"
+        }
 
-7. Run "Test" for the AWS Lambda function
-8. Check the CloudWatch logs for the output - you should see something like this:
-    You should see a number of 'pageUrl' entries, without any errors.
+1. Run "Test" for the AWS Lambda function
+1. Check the CloudWatch logs for the output - you should see something like this:
+ 
+    You should see a number of `pageUrl` entries, without any errors.
 
 
 Security Configuration
