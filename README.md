@@ -40,8 +40,8 @@ Examples
 Message type handler
 --------------------
 
-- the pageUrl handler receives `pageUrl` messages, does quick processing downloading the page body, and fires the body message
-- the pageBody handler receives `pageBody` messages, parse the body, and fires `pageUrl` message for each found URL  
+- the pageUrl handler receives `pageUrl` messages, does quick processing (such as downloading the page body), and fires the body message
+- the pageBody handler receives `pageBody` messages, parses the body, and fires `pageUrl` message for each found URL  
 
 ```python
 @context.message("pageUrl")
