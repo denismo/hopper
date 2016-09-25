@@ -21,7 +21,8 @@ It does that by managing message queue (currently Kinesis), and providing primit
 Eventually, it is also meant to work together with something like Chalice or Serverless, receiving messages initially via Web API, 
 and then injecting them into message queue. 
 
-All processing is happening on AWS Lambda so there are no servers. The library uses Kinesis (queue) and DynamoDB (status, statistics, some state). 
+All processing is happening on AWS Lambda so there are no servers, and all processing is asynchronous. 
+The framework uses Kinesis (queue) and DynamoDB (status, statistics, some state). 
 
 
 Features
@@ -31,7 +32,7 @@ Features
 |---|-----------|
 |@context.message|Marks a message handler for a message of certain type|
 |@context.filter|Marks a message filter for a message of certain type|
-|context.publish|
+|context.publish|Sends a message for processing by the framework (asynchronously)|
 
 Examples
 ============
