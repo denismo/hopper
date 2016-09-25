@@ -5,14 +5,15 @@ import logging
 logger = logging.getLogger("hopper.base")
 logger.setLevel(logging.INFO)
 
+# TODO: python-lambda changes - need to fork them
+# TODO: Let's write readme 
 # TODO Unit test: Filter, Join, Collect, Merge
 # TODO Exception handling - if error occurs, message is retried X number of times
-# TODO Stop signal
 # TODO Queue types
 # TODO Remove priority, replace with explicit queue name
 # TODO Logging
 # TODO Error handling
-# TODO Command line: deploy, start, stop
+# TODO Command line: start, stop
 # TODO CollectAs - specify message type
 # TODO Example use cases: https://github.com/claudiajs/example-projects
 # TODO Check https://github.com/nficano/python-lambda source code, for potential simplified deployment

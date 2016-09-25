@@ -3,7 +3,6 @@ import boto3
 def _updateTrigger(cfg, enabled=False):
     """Disables Kinesis/Lambda trigger"""
     triggerID = _getTriggerID(cfg)
-    print('TriggerID', triggerID)
     if triggerID is not None:
         awslambda = boto3.client("lambda", region_name=cfg.get('region'))
         awslambda.update_event_source_mapping(
@@ -31,7 +30,6 @@ def _getTriggerID(cfg):
                 FunctionName=cfg.get('function_name')                    
         )    
         if mappings is not None and 'EventSourceMappings' in mappings:
-            print(mappings)
             return mappings['EventSourceMappings'][0]['UUID']
         else:
             return None
