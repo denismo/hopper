@@ -77,6 +77,26 @@ def urlFilter(msg):
         return None
 ```
 
+Future direction
+================
+
+The current implementation is just a proof of concept. I can envision a lot of features before it is really useful:
+
+- Fork/Join
+- Map/Reduce
+- Apache Spark-style fluent API (see analytics.py/pageView for example)
+- Multiple queues for managing priority
+- Different sources (SQS, S3, API Gateway, DynamoDB)
+- Retries
+- Correlation
+- Throttling
+- Read-receipts
+
+Some of these are typical of queue-based processing, but not necessarily applicable:
+- Rollback actions
+- Transactions
+- Ordering
+
 Installation
 ============
 
