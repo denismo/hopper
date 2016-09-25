@@ -158,7 +158,7 @@ AWS Lambda execution role needs the following permissions (assuming the DynamoDB
                         "dynamodb:UpdateItem"
                     ],
                     "Resource": [
-                        "arn:aws:dynamodb:ap-southeast-2:334633661752:table/HopperRuntime"
+                        "arn:aws:dynamodb:ap-southeast-2:1234567890:table/HopperRuntime"
                     ]
                 },
                 {
@@ -172,7 +172,7 @@ AWS Lambda execution role needs the following permissions (assuming the DynamoDB
                         "kinesis:PutRecords"
                     ],
                     "Resource": [
-                        "arn:aws:kinesis:ap-southeast-2:334633661752:stream/HopperQueue"
+                        "arn:aws:kinesis:ap-southeast-2:1234567890:stream/HopperQueue"
                     ]
                 },
                 {
@@ -187,12 +187,12 @@ AWS Lambda execution role needs the following permissions (assuming the DynamoDB
                 {
                     "Effect": "Allow",
                     "Action": "lambda:InvokeFunction",
-                    "Resource": "arn:aws:lambda:ap-southeast-2:334633661752:function:hopper"
+                    "Resource": "arn:aws:lambda:ap-southeast-2:1234567890:function:hopper"
                 },
                 {
                     "Effect": "Allow",
                     "Action": "kinesis:ListStreams",
-                    "Resource": "arn:aws:kinesis:ap-southeast-2:334633661752:stream/*"
+                    "Resource": "arn:aws:kinesis:ap-southeast-2:1234567890:stream/*"
                 }
             ]
         }
@@ -207,7 +207,7 @@ The deployment user need the following permissions:
                         "lambda:GetEventSourceMapping"
                     ],
                     "Resource": [
-                        "arn:aws:lambda:ap-southeast-2:334633661752:event-source-mappings:*"
+                        "arn:aws:lambda:ap-southeast-2:1234567890:event-source-mappings:*"
                     ]
                 },
                 {
@@ -233,14 +233,14 @@ The deployment user need the following permissions:
                         "lambda:UpdateFunctionCode",
                         "lambda:UpdateFunctionConfiguration"
                     ],
-                    "Resource": "arn:aws:lambda:ap-southeast-2:334633661752:function:hopper"
+                    "Resource": "arn:aws:lambda:ap-southeast-2:1234567890:function:hopper"
                 },
                 {
                     "Effect": "Allow",
                     "Action": [
                         "iam:PassRole"
                     ],
-                    "Resource": "arn:aws:iam::334633661752:role/hopper-runtime"
+                    "Resource": "arn:aws:iam::1234567890:role/hopper-runtime"
                 },
                 {
                     "Effect": "Allow",
@@ -252,7 +252,7 @@ The deployment user need the following permissions:
                         "dynamodb:DeleteItem"
                     ],
                     "Resource": [
-                        "arn:aws:dynamodb:ap-southeast-2:334633661752:table/HopperRuntime"
+                        "arn:aws:dynamodb:ap-southeast-2:1234567890:table/HopperRuntime"
                     ]
                 },
                 {
@@ -261,7 +261,7 @@ The deployment user need the following permissions:
                         "kinesis:DescribeStream"
                     ],
                     "Resource": [
-                        "arn:aws:kinesis:ap-southeast-2:334633661752:stream/HopperQueue"
+                        "arn:aws:kinesis:ap-southeast-2:1234567890:stream/HopperQueue"
                     ]
                 }
             ]
