@@ -14,6 +14,11 @@ logger.setLevel(logging.INFO)
 # TODO Error handling
 # TODO Command line: deploy, start, stop
 # TODO CollectAs - specify message type
+# TODO Example use cases: https://github.com/claudiajs/example-projects
+# TODO Check https://github.com/nficano/python-lambda source code, for potential simplified deployment
+# TODO Another uploader: https://github.com/rackerlabs/lambda-uploader
+# TODO Another installer: https://github.com/garnaat/kappa
+# TODO Another installer https://github.com/awslabs/chalice
 
 class ContextConfig(object):
     def __init__(self, autoStop=False, autoStopLimit=0, dynamoDBRegion='', kinesisRegion=''):
