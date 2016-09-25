@@ -23,9 +23,18 @@ and then injecting them into message queue.
 
 All processing is happening on AWS Lambda so there are no servers. The library uses Kinesis (queue) and DynamoDB (status, statistics, some state). 
 
+
 Features
 =======
-Here is a small example of the framework in action:
+
+|API|Description|
+|---|-----------|
+|@context.message|Marks a message handler for a message of certain type|
+|@context.filter|Marks a message filter for a message of certain type|
+|context.publish|
+
+Examples
+============
 
 Message type handler
 --------------------
