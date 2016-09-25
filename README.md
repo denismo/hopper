@@ -126,7 +126,7 @@ Requires:
         }
 
 1. Run "Test" for the AWS Lambda function
-1. Check the CloudWatch logs for the output - you should see something like this:
+1. Check the CloudWatch logs for the output.
  
     You should see a number of `pageUrl` entries, without any errors.
 
