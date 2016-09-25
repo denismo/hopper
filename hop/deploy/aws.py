@@ -1,4 +1,5 @@
 import boto3
+import logging
 
 def _updateTrigger(cfg, enabled=False):
     """Disables Kinesis/Lambda trigger"""

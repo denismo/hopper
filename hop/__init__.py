@@ -7,6 +7,7 @@ logger.setLevel(logging.INFO)
 
 # TODO: python-lambda changes - need to fork them
 # TODO: Let's write readme 
+# TODO: Message ID, parent/child
 # TODO Unit test: Filter, Join, Collect, Merge
 # TODO Exception handling - if error occurs, message is retried X number of times
 # TODO Queue types
