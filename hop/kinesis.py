@@ -31,10 +31,6 @@ class LambdaContext(Context):
                 'RequestCounter': {'Action': 'ADD',
                 'Value': 1}                
             }
-            # UpdateExpression="set RequestCounter = RequestCounter + :val",
-            # ExpressionAttributeValues={
-            #     ':val': 1
-            # }
         )        
 
     def _getRequestCount(self):

@@ -5,9 +5,9 @@ import logging
 logger = logging.getLogger("hopper.base")
 logger.setLevel(logging.INFO)
 
-# TODO: python-lambda changes - need to fork them
-# TODO: Let's write readme 
-# TODO: Message ID, parent/child
+# TODO python-lambda changes - need to fork them
+# TODO Message ID, parent/child
+# TODO Doc Comments and comments in code
 # TODO Unit test: Filter, Join, Collect, Merge
 # TODO Exception handling - if error occurs, message is retried X number of times
 # TODO Queue types
@@ -104,8 +104,6 @@ class Context(object):
         return caller
 
     def message(self, rule):
-        # if self._containsRule(rule, 'handler'):
-        #     raise Exception('Duplicate handler for rule ' + rule)
         def caller(f):
             self._register(rule, 'handler', f)
             return f
