@@ -15,11 +15,11 @@ Design
 ======
 
 The key input into the framework is a message handler, associated with a certain message type. 
-The library ensures that when the message of such type is received, it is dispatched to the handler.
+The framework ensures that when the message of such type is received, it is dispatched to the handler.
 
 It does that by managing message queue (currently Kinesis), and providing primitives for declaring handlers and firing messages.
-Eventually, it is also meant to work together with something like Chalice or Serverless, receiving messages initially via Web API, 
-and then injecting them into message queue. 
+Eventually, it is also meant to work together with something like Chalice or Serverless, receiving messages initially via Web API (and any other sources), 
+and then injecting them into message queue.
 
 All processing is happening on AWS Lambda so there are no servers, and all processing is asynchronous. 
 The framework uses Kinesis (queue) and DynamoDB (status, statistics, some state). 
@@ -46,31 +46,21 @@ Message type handler
 ```python
 @context.message("pageUrl")
 def pageUrl(msg):
-    logger.info("pageUrl %s" % msg)
     if 'url' in msg and msg['url'] is not None:
         if not isUrlProcessed(msg['url']):
             body = download(msg['url'])
             markUrlProcessed(msg['url'])
             if body is not None:
                 context.publish(dict(messageType='pageBody', body=body))
-            else:
-                logger.debug('Body is None')
-        else:
-            logger.debug('URL has been processed')
-    else:
-        logger.warn('url is None in pageUrl(msg)')
 
 
 @context.message('pageBody')
 def pageBody(msg): # 
-    logger.info("pageBody %s" % msg)
     if 'body' in msg and msg['body'] is not None:
         urls = extractUrls(msg['body'])
         for url in urls:
             if not isUrlProcessed(url):
                 context.publish(dict(messageType='pageUrl', url=url, priority=(0 if url.startswith('https') else 1)))
-    else:
-        logger.warn('body is None in pageBody(msg)')
 ```
 
 Filter (executed before handlers)
