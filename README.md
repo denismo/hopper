@@ -1,8 +1,8 @@
 Hopper
 ======
 
-Hopper is a framework that allows writing message-driven distributed applications in Python, deployed on AWS Lambda.
-It removes the boilerplate code associated with message passing, queueing, matching and so on, letting you focus on the business logic of message handlers.
+Hopper is a message passing framework that allows writing message-driven distributed applications in Python, deployed on AWS Lambda.
+It removes the boilerplate code associated with sending messages, queueing, invoking the right handler, and dealing with errors, letting you focus on the business logic of message handlers.
 It is inspired by [Akka actors](http://doc.akka.io/docs/akka/snapshot/intro/what-is-akka.html), [AWSLabs Chalice](https://github.com/awslabs/chalice), and [GigaSpaces](http://www.gigaspaces.com/).
 
 Usage scenarios
