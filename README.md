@@ -18,7 +18,7 @@ Usage scenarios
 Design
 ======
 
-The key input into the framework is a message handler, associated with a certain message type. 
+The key configurtion element of the framework is a message handler, associated with a certain message type. 
 The framework ensures that when the message of such type is received, it is dispatched to the handler.
 
 It does that by managing message queue (currently Kinesis), and providing primitives for declaring handlers and firing messages.
@@ -70,7 +70,7 @@ def pageBody(msg): #
 Filter (executed before handlers)
 -------
 
-This ia a simple filter that stops processing of `pageURL` messages containing certain URLs by returning None. 
+This is a simple filter that stops processing of `pageURL` messages containing certain URLs by returning None. 
 
 ```python
 @context.filter('pageUrl', 1)
@@ -88,7 +88,7 @@ Combining input from Chalice, you can create a one-way pipeline of asynchronous 
 Example is a real-time analytics use case, where page view requires additional resolution such as geo-ip lookup and user agent,
 both of which run in parallel, until the results are provided to the final handler which stores it in a DB.
 
-The handlers are just normal Python functions (or Python lambdas), and they will be invoked in separate Lambda invocations, ensuring the pipeline is non-blocking.
+The handlers are just normal Python functions (or Python `lambda`s), and they will be invoked in separate AWS Lambda invocations, ensuring the pipeline is non-blocking.
 
 ```python
 # pageView?url=...
@@ -102,9 +102,9 @@ def pageView():
     context.publish(dict(messageType='pageView', url=url))
         # "fork" tells the handlers to run in parallel 
         .fork() \
-        # "then" will run after handle asynchronously using another Lambda invocation
+        # "then" will run after "handle" asynchronously using another Lambda invocation, taking any input "handle" produces
         .handle(geoIPLookup).then(...) \
-        # another "handle" will run in parallel with the handle-then above
+        # another "handle" will run in parallel with the handle-then above, processing the "pageView" message
         .handle(resolveUserAgent) \
         # join will delay the final handlers until all above paths produced results and 
         # group them by parentMessageID into one message handled by "enrichedPageView"
@@ -120,9 +120,9 @@ Pipeline (pending)
 -----------------
 You can also define a standalone pipeline with pre-defined source (ala Spark Streaming).
 
-Example below will listen on Kinesis HopperQueue for any messages match them to handlers (ala switch-case), processing sequentially (but asynchronously) until
-there are no more messages. Similar for Fork-Join, the handlers in this case are just normal Python functions (or Python lambdas), 
-and they will be invoked in separate Lambda invocations, ensuring the pipeline is non-blocking.
+Example below will listen on Kinesis HopperQueue for any messages, matching them to handlers (ala switch-case) and processing sequentially (but asynchronously) until
+there are no more messages. Similar to Fork-Join, the handlers in this case are just normal Python functions (or Python `lambda`s), 
+and they will be invoked in separate AWS Lambda invocations, ensuring the pipeline is non-blocking.
 
 This code will execute at top-level, inside of the "main" function.
 ```python
