@@ -18,7 +18,8 @@ Usage scenarios
 Design
 ======
 
-The key configurtion element of the framework is a message handler, associated with a certain message type. 
+The key input into the framework is a message of some type.
+The key configuration element of the framework is a message handler, associated with a certain message type. 
 The framework ensures that when the message of such type is received, it is dispatched to the handler.
 
 It does that by managing message queue (currently Kinesis), and providing primitives for declaring handlers and firing messages.
@@ -34,8 +35,9 @@ Features
 
 |API|Description|
 |---|-----------|
-|@context.message|Marks a message handler for a message of certain type|
+|@context.handle|Marks a message handler for a message of certain type|
 |@context.filter|Marks a message filter for a message of certain type|
+|context.message|Creates a new message object|
 |context.publish|Sends a message for processing by the framework (asynchronously)|
 
 Examples
@@ -48,23 +50,23 @@ Message type handler
 - the pageBody handler receives `pageBody` messages, parses the body, and fires `pageUrl` message for each found URL  
 
 ```python
-@context.message("pageUrl")
+@context.handle("pageUrl")
 def pageUrl(msg):
     if 'url' in msg and msg['url'] is not None:
         if not isUrlProcessed(msg['url']):
             body = download(msg['url'])
             markUrlProcessed(msg['url'])
             if body is not None:
-                context.publish(dict(messageType='pageBody', body=body))
+                context.publish(context.message(messageType='pageBody', body=body))
 
 
-@context.message('pageBody')
+@context.handle('pageBody')
 def pageBody(msg): # 
     if 'body' in msg and msg['body'] is not None:
         urls = extractUrls(msg['body'])
         for url in urls:
             if not isUrlProcessed(url):
-                context.publish(dict(messageType='pageUrl', url=url, priority=(0 if url.startswith('https') else 1)))
+                context.publish(context.message(messageType='pageUrl', url=url, priority=(0 if url.startswith('https') else 1)))
 ```
 
 Filter (executed before handlers)
@@ -99,7 +101,7 @@ def pageView():
     # which will be processed by geoIPLookup and resolveUserAgent (in parallel)
     # and then the messages of both will be dispatched (combined) to enrichedPageView
     # which can merge them together  
-    context.publish(dict(messageType='pageView', url=url))
+    context.publish(context.message(messageType='pageView', url=url))
         # "fork" tells the handlers to run in parallel 
         .fork() \
         # "then" will run after "handle" asynchronously using another Lambda invocation, taking any input "handle" produces
