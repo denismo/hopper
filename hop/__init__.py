@@ -80,6 +80,7 @@ class Context(object):
         return msg
 
     def _invokeRule(self, rule, kind, msg):
+        # TODO Problem: the handlers for the same message type are supposed to be running in parallel, not sequentially
         for callback in self.rules[kind][rule]:
             if self._getTerminated(): return
             callback(msg)

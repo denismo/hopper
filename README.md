@@ -6,6 +6,9 @@ It abstract away the details of sending messages, queueing, invoking the right h
 It is inspired by [Akka actors](http://doc.akka.io/docs/akka/snapshot/intro/what-is-akka.html), 
 [AWSLabs Chalice](https://github.com/awslabs/chalice), [Apache Storm](http://storm.apache.org/).
 
+Note: this project is in Proof-of-concept state. I do not recommend anyone using it, but please do evaluate, and provide feedback if you find it interesting. 
+----
+
 Usage scenarios
 ===============
 - A web crawler
@@ -104,8 +107,13 @@ def pageView():
         # another "handle" will run in parallel with the handle-then above
         .handle(resolveUserAgent) \
         # join will delay the final handlers until all above paths produced results and 
-        # group them by parent message ID into one message handled by "enrichedPageView"
+        # group them by parentMessageID into one message handled by "enrichedPageView"
         .join(enrichedPageView)
+
+# Alternative to .join - collect all message which have the same parent 'pageView'
+@context.join(parentMessage='pageView')
+def collectPageViews(msgs):
+    ...
 ```
 
 Pipeline (pending)
