@@ -1,4 +1,4 @@
 {
-  "pi": 3.14,
-  "e": 2.718
+    "messageType":"pageUrl",
+    "url":"http://abc.com"
 }
