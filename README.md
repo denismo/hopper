@@ -2,13 +2,14 @@ Hopper
 ======
 
 Hopper is a message passing framework that allows writing message-driven distributed applications in Python, deployed on AWS Lambda.
-It removes the boilerplate code associated with sending messages, queueing, invoking the right handler, and dealing with errors, letting you focus on the business logic of message handlers.
-It is inspired by [Akka actors](http://doc.akka.io/docs/akka/snapshot/intro/what-is-akka.html), [AWSLabs Chalice](https://github.com/awslabs/chalice), and [GigaSpaces](http://www.gigaspaces.com/).
+It abstract away the details of sending messages, queueing, invoking the right handler, correlating, and dealing with errors, letting you focus on the business logic of data processing and transformations.
+It is inspired by [Akka actors](http://doc.akka.io/docs/akka/snapshot/intro/what-is-akka.html), 
+[AWSLabs Chalice](https://github.com/awslabs/chalice), [Apache Storm](http://storm.apache.org/).
 
 Usage scenarios
 ===============
 - A web crawler
-- Analytics
+- Real-time Analytics
 - Distributed realtime processing graphs (the ones you'd write in [Apache Storm](http://storm.apache.org/))
 
 Design
@@ -75,6 +76,60 @@ def urlFilter(msg):
         return msg
     else:
         return None
+```
+
+Chain and Fork-join (pending)
+-----
+Combining input from Chalice, you can create a one-way pipeline of asynchronous processing.
+
+Example is a real-time analytics use case, where page view requires additional resolution such as geo-ip lookup and user agent,
+both of which run in parallel, until the results are provided to the final handler which stores it in a DB.
+
+```python
+# pageView?url=...
+@app.route('/pageView')
+def pageView():
+    url = app.current_request.query_params['url]
+    # Publishes a message into the pipeline
+    # which will be processed by geoIPLookup and resolveUserAgent (in parallel)
+    # and then the messages of both will be dispatched (combined) to enrichedPageView
+    # which can merge them together  
+    context.publish(dict(messageType='pageView', url=url))
+        # "fork" tells the handlers to run in parallel 
+        .fork() \
+        # "then" will run after handle
+        .handle(geoIPLookup).then(...) \
+        # another "handle" will run in parallel with the handle-then above
+        .handle(resolveUserAgent) \
+        # join will delay the final handlers until all above paths produced results and 
+        # group them by parent message ID into one message handled by "enrichedPageView"
+        .join(enrichedPageView)
+```
+
+Pipeline (pending)
+-----------------
+You can also define a standalone pipeline with pre-defined source. 
+
+
+```python
+# pageView?url=...
+@app.route('/pageView')
+def pageView():
+    url = app.current_request.query_params['url]
+    context.publish(dict(messageType='pageView', url=url))
+
+context.source(sources.kinesis('HopperQueue')) \
+    .case('pageView', context.fork() \
+        # "then" will run after handle
+        .handle(geoIPLookup).then(...) \
+        # another "handle" will run in parallel with the handle-then above
+        .handle(resolveUserAgent) \        
+        # join will delay the final handlers until all above paths produced results and 
+        # group them by parent message ID into one message handled by "enrichedPageView"
+        .join(enrichedPageView)
+    ) 
+    .case('linkClick', actionHandler) \
+    .other(defaultHandler)
 ```
 
 Future direction
