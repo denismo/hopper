@@ -110,11 +110,12 @@ def pageView():
 
 Pipeline (pending)
 -----------------
-You can also define a standalone pipeline with pre-defined source. 
+You can also define a standalone pipeline with pre-defined source (ala Spark Streaming).
 
 Example below will listen on Kinesis HopperQueue for any messages match them to handlers (ala switch-case), processing sequentially (but asynchronously) until
 there are no more messages. Similar for Fork-Join, the handlers in this case are just normal Python functions.
 
+This code will execute at top-level, inside of the "main" function.
 ```python
 context.source(sources.kinesis('HopperQueue')) \
     .case('pageView', context.fork() \
