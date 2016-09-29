@@ -85,6 +85,8 @@ Combining input from Chalice, you can create a one-way pipeline of asynchronous 
 Example is a real-time analytics use case, where page view requires additional resolution such as geo-ip lookup and user agent,
 both of which run in parallel, until the results are provided to the final handler which stores it in a DB.
 
+The handlers are just normal Python functions, and they will be invoked in separate Lambda invocations, ensuring the pipeline is non-blocking.
+
 ```python
 # pageView?url=...
 @app.route('/pageView')
@@ -97,7 +99,7 @@ def pageView():
     context.publish(dict(messageType='pageView', url=url))
         # "fork" tells the handlers to run in parallel 
         .fork() \
-        # "then" will run after handle
+        # "then" will run after handle asynchronously using another Lambda invocation
         .handle(geoIPLookup).then(...) \
         # another "handle" will run in parallel with the handle-then above
         .handle(resolveUserAgent) \
@@ -110,14 +112,10 @@ Pipeline (pending)
 -----------------
 You can also define a standalone pipeline with pre-defined source. 
 
+Example below will listen on Kinesis HopperQueue for any messages match them to handlers (ala switch-case), processing sequentially (but asynchronously) until
+there are no more messages. Similar for Fork-Join, the handlers in this case are just normal Python functions.
 
 ```python
-# pageView?url=...
-@app.route('/pageView')
-def pageView():
-    url = app.current_request.query_params['url]
-    context.publish(dict(messageType='pageView', url=url))
-
 context.source(sources.kinesis('HopperQueue')) \
     .case('pageView', context.fork() \
         # "then" will run after handle
