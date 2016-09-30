@@ -25,5 +25,7 @@ class MessageTest(unittest.TestCase):
         self.assertEqual(msg['messageType'], 'abc')
         self.assertIsNotNone(msg['_system'])
         self.assertIsNotNone(msg['_system']['messageID'])
+        self.assertEqual(type(msg['_system']['messageID']), str)
         self.assertIsNotNone(msg['_system']['timestamp'])
+        self.assertEqual(type(msg['_system']['timestamp']), str)
 

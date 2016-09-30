@@ -38,8 +38,8 @@ class Message(dict):
             self.update(params)
         self['messageType'] = messageType
         self['_system'] = {
-            'messageID': uuid.uuid4(),
-            'timestamp': datetime.utcnow()
+            'messageID': str(uuid.uuid4()),
+            'timestamp': str(datetime.utcnow())
         }
 
 class Context(object):
