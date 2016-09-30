@@ -8,7 +8,7 @@ __author__ = 'Denis Mikhalkin'
 
 import unittest
 
-class MessageTest(unittest.TestCase):
+class ContextTest(unittest.TestCase):
 
     def setUp(self):
         self.context = LocalContext()
@@ -17,12 +17,12 @@ class MessageTest(unittest.TestCase):
 
         passed = [False]
 
-        @self.context.message('testMessage')
+        @self.context.handle('testMessage')
         def handler(msg):
             self.assertTrue(msg is not None)
             passed[0] = True
 
-        self.context.publish(dict(messageType='testMessage'))
+        self.context.publish(self.context.message(messageType='testMessage'))
         self.context.run()
         self.assertTrue(passed[0])
 
@@ -30,12 +30,12 @@ class MessageTest(unittest.TestCase):
 
         passed = [False]
 
-        @self.context.message('testMessage2')
+        @self.context.handle('testMessage2')
         def handler(msg):
             self.assertTrue(msg is not None)
             passed[0] = True
 
-        self.context.publish(dict(messageType='testMessage'))
+        self.context.publish(self.context.message(messageType='testMessage'))
         self.context.run()
         self.assertFalse(passed[0])
 
@@ -43,18 +43,18 @@ class MessageTest(unittest.TestCase):
 
         passed = [True]
 
-        @self.context.message('testMessage')
+        @self.context.handle('testMessage')
         def handler(msg):
             self.assertTrue(msg is not None)
             self.context.stop()
 
-        @self.context.message('testMessageAfter')
+        @self.context.handle('testMessageAfter')
         def handler(msg):
             self.assertTrue(msg is not None)
             passed[0] = False
 
-        self.context.publish(dict(messageType='testMessage'))
-        self.context.publish(dict(messageType='testMessageAfter'))
+        self.context.publish(self.context.message(messageType='testMessage'))
+        self.context.publish(self.context.message(messageType='testMessageAfter'))
         self.context.run()
         self.assertTrue(passed[0])
     
@@ -67,7 +67,7 @@ class MessageTest(unittest.TestCase):
             passed[0] = True
             return msg 
 
-        self.context.publish(dict(messageType='testMessage'))
+        self.context.publish(self.context.message(messageType='testMessage'))
         self.context.run()
         self.assertTrue(passed[0])
                    

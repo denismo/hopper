@@ -15,22 +15,22 @@ else:
     context = LambdaContext(ContextConfig(autoStop=True, autoStopLimit=100))
 
 @context.webHandler("webRequest")
-@context.message('pageView')
+@context.handle('pageView')
 def pageView(msg):
     url = msg['url']
-    context.publish(dict(messageType='internalPageView', url=url))\
+    context.publish(context.message(messageType='internalPageView', url=url))\
         .collect('enrichedPageView') \
         .mergeAs('enrichedFinalPageView')
 
-@context.message('internalPageView')
+@context.handle('internalPageView')
 def geoIPLookup(msg):
     # Lookup IP
     url = msg['url']
     country=''
-    context.publish(msg.update(dict(messageType='enrichedPageView', country='')))
+    context.publish(context.message(msg.update(dict(messageType='enrichedPageView', country='')))
 
 # Note that it matches the original message
-@context.message('enrichedFinalPageView')
+@context.handle('enrichedFinalPageView')
 def uniqueUsers(msg):
     cookie = msg['cookie']
     country = msg['country']
@@ -38,7 +38,7 @@ def uniqueUsers(msg):
     incrementUserCounter(cookie, country)
     # Nothing published
 
-@context.message('enrichedFinalPageView')
+@context.handle('enrichedFinalPageView')
 def enrichedPageView(msg):
     country = msg['country']
     url = msg['url']
@@ -47,11 +47,11 @@ def enrichedPageView(msg):
     incrementPageView(path, country)
     # Nothing published
 
-@context.message('internalPageView')
+@context.handle('internalPageView')
 def resolveUserAgent(msg):
     userAgent = msg['userAgent']
     browserInfo = lookupUserAgent(userAgent)
-    context.publish(msg.update(dict(messageType='enrichedPageView').update(browserInfo)))
+    context.publish(context.message(msg.update(dict(messageType='enrichedPageView').update(browserInfo))))
 
 # Alternative to .collect - collect all message which have the same parentMessageID
 # This method will receive original 'enrichedPageView' messages, first each one of them, and eventually all of them
@@ -73,5 +73,5 @@ def lambda_handler(event, lambda_context):
 
 if __name__ == '__main__':
     # Using default implementation for testing
-    context.publish(dict(messageType='pageView', url='http://abc.com', cookie='abc', userAgent='Chrome'))
+    context.publish(context.message(messageType='pageView', url='http://abc.com', cookie='abc', userAgent='Chrome'))
     context.run()

@@ -10,16 +10,16 @@ __author__ = 'Denis Mikhalkin'
 
 import logging
 logger = logging.getLogger("hopper.crawler")
-logger.setLevel(logging.INFO)
 
 if __name__ == '__main__':
     context = LocalContext(ContextConfig(autoStop=True, autoStopLimit=100))
+    logging.basicConfig(format='%(levelname)s %(filename)s - %(message)s', level=logging.DEBUG)
 else:
     # By default, make sure the sample stops on Lambdato avoid incurring costs
     context = LambdaContext(ContextConfig(autoStop=True, autoStopLimit=100, dynamoDBRegion='ap-southeast-2', kinesisRegion='ap-southeast-2'))
 
 @context.webHandler("webRequest")
-@context.message("pageUrl")
+@context.handle("pageUrl")
 def pageUrl(msg):
     logger.info("pageUrl %s" % msg)
     if 'url' in msg and msg['url'] is not None:
@@ -28,7 +28,7 @@ def pageUrl(msg):
             body = download(msg['url'])
             markUrlProcessed(msg['url'])
             if body is not None:
-                context.publish(dict(messageType='pageBody', body=body))
+                context.publish(context.message(messageType='pageBody', body=body))
             else:
                 logger.debug('Body is None')
         else:
@@ -36,14 +36,14 @@ def pageUrl(msg):
     else:
         logger.warn('url is None in pageUrl(msg)')
 
-@context.message('pageBody')
+@context.handle('pageBody')
 def pageBody(msg): # TODO Unwrap parameters
     logger.info("pageBody %s" % msg)
     if 'body' in msg and msg['body'] is not None:
         urls = extractUrls(msg['body'])
         for url in urls:
             if not isUrlProcessed(url):
-                context.publish(dict(messageType='pageUrl', url=url, priority=(0 if url.startswith('https') else 1)))
+                context.publish(context.message(messageType='pageUrl', url=url, priority=(0 if url.startswith('https') else 1)))
     else:
         logger.warn('body is None in pageBody(msg)')
 
@@ -63,5 +63,6 @@ def lambda_handler(event, lambda_context):
     context.lambda_handler(event, lambda_context)
 
 if __name__ == '__main__':
-    context.publish(dict(messageType='pageUrl', url='http://abc.com'))
+    logger.info('Running crawler')
+    context.publish(context.message(messageType='pageUrl', url='http://abc.com'))
     context.run()

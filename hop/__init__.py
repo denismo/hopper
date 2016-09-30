@@ -1,7 +1,9 @@
 from __future__ import print_function
 __author__ = 'Denis Mikhalkin'
 
+import uuid
 import logging
+from datetime import datetime
 logger = logging.getLogger("hopper.base")
 logger.setLevel(logging.INFO)
 
@@ -28,6 +30,17 @@ class ContextConfig(object):
         self.dynamoDBRegion = dynamoDBRegion
         self.kinesisRegion = kinesisRegion
 
+class Message(dict):
+    def __init__(self, messageType, params):
+        if messageType is None or messageType == '':
+            raise Exception('messageType must be non-empty string')
+        if params is not None:
+            self.update(params)
+        self['messageType'] = messageType
+        self['_system'] = {
+            'messageID': uuid.uuid4(),
+            'timestamp': datetime.utcnow()
+        }
 
 class Context(object):
     def __init__(self, config=None):
@@ -59,7 +72,7 @@ class Context(object):
         self._incrementRequestCount()
         if self._checkForStop(): return
         if msg is not None:
-            if type(msg) == dict and 'messageType' in msg:
+            if (type(msg) == dict or type(msg) == Message) and 'messageType' in msg:
                 msg = self._filterMsg(msg)
                 if msg is not None:
                     if self._containsRule(msg['messageType'], 'handler'):
@@ -103,7 +116,7 @@ class Context(object):
             return f
         return caller
 
-    def message(self, rule):
+    def handle(self, rule):
         def caller(f):
             self._register(rule, 'handler', f)
             return f
@@ -123,6 +136,9 @@ class Context(object):
 
 
     ########### Actions #############
+
+    def message(self, messageType, **kwargs):
+        return Message(messageType, kwargs)
 
     def stop(self):
         pass
