@@ -6,6 +6,7 @@ role: hopper-runtime
 description: Demo of Hopper - Crawler function
 kinesis-stream: HopperQueue
 dynamodb-table: HopperRuntime
+subfolders: ['hop','examples']
 
 # if access key and secret are left blank, boto will use the credentials
 # defined in the [default] section of ~/.aws/credentials.

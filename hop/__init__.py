@@ -5,7 +5,6 @@ import logging
 logger = logging.getLogger("hopper.base")
 logger.setLevel(logging.INFO)
 
-# TODO python-lambda changes - need to fork them
 # TODO Message ID, parent/child
 # TODO Doc Comments and comments in code
 # TODO Unit test: Filter, Join, Collect, Merge

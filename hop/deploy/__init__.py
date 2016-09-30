@@ -14,7 +14,7 @@ def doDeploy():
 
     # build(packageDir)
     print('Deploying Lambda function')
-    deploy(packageDir, subfolders={'hop','examples'})
+    deploy(packageDir, perform_install=False)
 
     print('Disabling trigger')
     _updateTrigger(cfg, enabled=False)
