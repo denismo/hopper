@@ -10,6 +10,7 @@ from hop import Context, ContextConfig
 
 if __name__ == '__main__':
     context = LocalContext(ContextConfig(autoStop=True, autoStopLimit=100))
+    logging.basicConfig(format='%(levelname)s | %(filename)s | %(message)s', level=logging.DEBUG)
 else:
     # By default, make sure the sample stops on Lambdato avoid incurring costs
     context = LambdaContext(ContextConfig(autoStop=True, autoStopLimit=100))
