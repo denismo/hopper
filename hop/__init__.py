@@ -4,8 +4,9 @@ __author__ = 'Denis Mikhalkin'
 import uuid
 import logging
 from datetime import datetime
+import yaml
+import collections
 logger = logging.getLogger("hopper.base")
-logger.setLevel(logging.INFO)
 
 # TODO Message ID, parent/child
 # TODO Doc Comments and comments in code
@@ -23,15 +24,39 @@ logger.setLevel(logging.INFO)
 # TODO Another installer: https://github.com/garnaat/kappa
 # TODO Another installer https://github.com/awslabs/chalice
 
-class ContextConfig(object):
-    def __init__(self, autoStop=False, autoStopLimit=0, dynamoDBRegion='', kinesisRegion=''):
-        self.autoStop = autoStop
-        self.autoStopLimit = autoStopLimit
-        self.dynamoDBRegion = dynamoDBRegion
-        self.kinesisRegion = kinesisRegion
+# TODO Config is too specific to the implementation. Should have generic sections, which will be interpreted by corresponding service
+class ContextConfig(dict):
+    def __init__(self, yamlObject=None):
+        dict.__init__(self)
+        if yaml is not None:
+            self.update(yamlObject)
+            for key, value in ContextConfig._traverse(yamlObject):
+                self[key] = value
+
+    def __getitem__(self, key):
+        try:
+            return dict.__getitem__(self, key)
+        except:
+            return None
+
+    @staticmethod
+    def _traverse(nested):
+        for key, value in nested.iteritems():
+            if isinstance(value, collections.Mapping):
+                for inner_key, inner_value in ContextConfig._traverse(value):
+                    yield key + '.' + inner_key, inner_value
+            else:
+                yield key, value        
+
+    @staticmethod
+    def fromYaml(configFile):
+        with open(configFile, 'r') as stream:
+            return ContextConfig(yamlObject=yaml.load(stream))
+
 
 class Message(dict):
     def __init__(self, messageType, params):
+        dict.__init__(self)
         if messageType is None or messageType == '':
             raise Exception('messageType must be non-empty string')
         if params is not None:
@@ -41,6 +66,9 @@ class Message(dict):
             'messageID': str(uuid.uuid4()),
             'timestamp': str(datetime.utcnow())
         }
+
+    def clone(self):
+        return Message(self['messageType'], self)
 
 class Context(object):
     def __init__(self, config=None):
@@ -63,8 +91,8 @@ class Context(object):
     def _checkForStop(self):
         if self._getTerminated():
             return True
-        if self.config.autoStop and self._getRequestCount() > self.config.autoStopLimit:
-            logger.info("Stopping because of limit on requests %s", self.config.autoStopLimit)
+        if self.config['runtime.autoStop'] and self._getRequestCount() > self.config['runtime.autoStopLimit']:
+            logger.info("Stopping because of limit on requests %s", self.config['runtime.autoStopLimit'])
             return True
         return False
 
@@ -92,10 +120,46 @@ class Context(object):
         return msg
 
     def _invokeRule(self, rule, kind, msg):
-        # TODO Problem: the handlers for the same message type are supposed to be running in parallel, not sequentially
-        for callback in self.rules[kind][rule]:
-            if self._getTerminated(): return
+        if self._getTerminated(): return
+
+        callbacks = self.rules[kind][rule]
+        if callbacks is None or len(callbacks) == 0:
+            return
+
+        callbacks = self._callbacksForMessage(callbacks, msg)
+
+        callback = callbacks[0]
+        try:
             callback(msg)
+        except:
+            logger.exception('Exception calling callback %s', callback)
+        
+        for callback in callbacks[1:]:
+            newMsg = self._callbackWrappedMessage(msg, callback)
+            logger.debug('Publishing parallel message: %s', newMsg)
+            self.publish(newMsg, 'priority')
+
+    def _callbacksForMessage(self, callbacks, msg):
+        if 'flow' in msg and 'currentState' in msg['flow'] and 'callback' in msg['flow']['currentState']:
+            for callback in callbacks:
+                if callback.func_name == msg['flow']['currentState']['callback']:
+                    return [callback]
+            return []
+        else:
+            return callbacks
+
+    def _callbackWrappedMessage(self, msg, callback):
+        """
+        Creates a message with the flow state which will match the corresponding callback
+        """
+        callbackMsg = msg.clone()
+        # TODO Message might already be having flow
+        callbackMsg['flow'] = {
+            'currentState': {
+                'callback': callback.func_name
+            }
+        }
+        return callbackMsg
 
     ######### Overides #########
 
@@ -109,12 +173,6 @@ class Context(object):
         raise NotImplemented("_incrementRequestCount is not implemented by default")
 
     ######### Wrappers #############
-
-    def webHandler(self, rule):
-        # TODO Register web rule
-        def caller(f):
-            return f
-        return caller
 
     def handle(self, rule):
         def caller(f):
@@ -130,7 +188,7 @@ class Context(object):
 
     def join(self, condition, message=None, discard=None, minimumCount=1):
         def caller(f):
-            self._register(message, 'reduce', f, condition=condition)
+            self._register(message, 'join', f, condition=condition)
             return f
         return caller
 
@@ -140,13 +198,20 @@ class Context(object):
     def message(self, messageType, **kwargs):
         return Message(messageType, kwargs)
 
+    def messageFromJson(self, messageJson):
+        if type(messageJson) == str:
+            loaded = json.loads(messageJson)
+        else:
+            loaded = messageJson
+        return Message(loaded['messageType'], loaded)
+
     def stop(self):
         pass
 
     def forget(self, msgs):
         pass
 
-    def publish(self, msg):
+    def publish(self, msg, queue=None):
         if self.terminated:
             return
 

@@ -73,9 +73,10 @@ class LambdaContext(Context):
                     pass
         else:
             try:
-                if type(event) == str:
-                    self._process(json.loads(event))
-                elif type(event) == dict:
+                # TODO Convert event into Message object
+                if type(event) == str or type(event) == dict:
+                    event = self.messageFromJson(event)
+                if type(event) == Message:
                     self._process(event)
                 else:
                     logger.error("Unexpected type of message: %s" % type(event))
@@ -95,8 +96,8 @@ class LambdaContext(Context):
             }
         )
 
-    def publish(self, msg):
+    def publish(self, msg, queue=None):
         self.kinesisClient.put_record(    
-            StreamName='HopperQueue',
+            StreamName=self.config['queues.%s.stream' % (queue or 'default')],
             Data=json.dumps(msg),
             PartitionKey=uuid.uuid4().get_hex())

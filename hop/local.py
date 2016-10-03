@@ -45,16 +45,26 @@ class LocalContext(Context):
     def stop(self):
         self.terminated = True
 
-    def publish(self, msg):
+    def publish(self, msg, queueName=None):
         if self.terminated:
             return
         if 'priority' in msg:
             priority = msg['priority']
         else:
-            priority = 1
+            priority = self._queueIndex(queueName) if queueName is not None else 1
         queue = self.queues[priority]
         if queue is None:
             queue = []
             self.queues[priority] = queue
         queue.append(msg)
 
+    def _queueIndex(self, queueName):
+        if 'queues' in self.config:
+            queues = self.config['queues']
+            index = 0
+            for key in queues:
+                if key == queueName:
+                    return index
+                index += 1
+
+        return 1

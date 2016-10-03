@@ -12,13 +12,13 @@ import logging
 logger = logging.getLogger("hopper.crawler")
 
 if __name__ == '__main__':
-    context = LocalContext(ContextConfig(autoStop=True, autoStopLimit=100))
+    # context = LocalContext(ContextConfig(autoStop=True, autoStopLimit=100))
+    context = LocalContext(ContextConfig.fromYaml('config.yaml'))
     logging.basicConfig(format='%(levelname)s | %(filename)s | %(message)s', level=logging.DEBUG)
 else:
     # By default, make sure the sample stops on Lambdato avoid incurring costs
     context = LambdaContext(ContextConfig(autoStop=True, autoStopLimit=100, dynamoDBRegion='ap-southeast-2', kinesisRegion='ap-southeast-2'))
 
-@context.webHandler("webRequest")
 @context.handle("pageUrl")
 def pageUrl(msg):
     logger.info("pageUrl %s" % msg)
@@ -29,12 +29,12 @@ def pageUrl(msg):
             markUrlProcessed(msg['url'])
             if body is not None:
                 context.publish(context.message(messageType='pageBody', body=body))
-            else:
-                logger.debug('Body is None')
-        else:
-            logger.debug('URL has been processed')
     else:
         logger.warn('url is None in pageUrl(msg)')
+
+@context.handle("pageUrl")
+def printUrl(msg):
+    logger.info('Processing parallel message: %s', msg)
 
 @context.handle('pageBody')
 def pageBody(msg): # TODO Unwrap parameters

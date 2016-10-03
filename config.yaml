@@ -16,3 +16,16 @@ subfolders: ['hop','examples']
 # dist_directory: dist
 # timeout: 15
 memory_size: 256
+
+runtime:
+    autoStop: True
+    autoStopLimit: 100
+
+queues:
+    priority:
+        type: kinesis
+        stream: HopperQueuePriority
+    default:
+        type: kinesis
+        stream: HopperQueue
+
