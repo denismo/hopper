@@ -140,9 +140,9 @@ class Context(object):
             self.publish(newMsg, 'priority')
 
     def _callbacksForMessage(self, callbacks, msg):
-        if 'flow' in msg and 'currentState' in msg['flow'] and 'callback' in msg['flow']['currentState']:
+        if 'flow' in msg['_system'] and 'currentState' in msg['_system']['flow'] and 'callback' in msg['_system']['flow']['currentState']:
             for callback in callbacks:
-                if callback.func_name == msg['flow']['currentState']['callback']:
+                if callback.func_name == msg['_system']['flow']['currentState']['callback']:
                     return [callback]
             return []
         else:
@@ -153,12 +153,14 @@ class Context(object):
         Creates a message with the flow state which will match the corresponding callback
         """
         callbackMsg = msg.clone()
-        # TODO Message might already be having flow
-        callbackMsg['flow'] = {
-            'currentState': {
-                'callback': callback.func_name
-            }
+        if 'flow' in callbackMsg['_system']:
+            flow = callbackMsg['_system']['flow']
+        else:
+            flow = {}
+        flow['currentState'] = {
+            'callback': callback.func_name
         }
+        callbackMsg['_system']['flow'] = flow
         return callbackMsg
 
     ######### Overides #########
