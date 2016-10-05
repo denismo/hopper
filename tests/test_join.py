@@ -34,7 +34,8 @@ class JoinTest(unittest.TestCase):
             .fork() \
             .handle(geoIPLookup) \
             .handle(resolveUserAgent) \
-            .join(enrichedPageView)
+            .join(enrichedPageView) \
+            .schedule()
 
         self.context.run()
         self.assertEqual(self.stack, 'geoIPLookup,resolveUserAgent,enrichedPageView,')
@@ -42,7 +43,8 @@ class JoinTest(unittest.TestCase):
     def test_join_from_webhandler_straight_join(self):
         # This is also possible as there could be global handlers. The join will be on parent message ID.
         self.context.publish(self.context.message(messageType='pageView', url=url)) \
-            .join(enrichedPageView)
+            .join(enrichedPageView) \
+            .schedule()
 
         self.context.run()
         self.assertEqual(self.stack, 'enrichedPageView,')
@@ -51,7 +53,8 @@ class JoinTest(unittest.TestCase):
         # This is also possible as there could be global handlers. The join will be on parent message ID.
         self.context.publish(self.context.message(messageType='pageView', url=url)) \
             .handle(geoIPLookup) \
-            .join(enrichedPageView)
+            .join(enrichedPageView) \
+            .schedule()
 
         self.context.run()
         self.assertEqual(self.stack, 'geoIPLookup,enrichedPageView,')
@@ -61,7 +64,17 @@ class JoinTest(unittest.TestCase):
         self.context.publish(self.context.message(messageType='pageView', url=url)) \
             .handle(geoIPLookup) \
             .handle(resolveUserAgent) \
-            .join(enrichedPageView)
+            .join(enrichedPageView) \
+            .schedule()
 
         self.context.run()
         self.assertEqual(self.stack, 'geoIPLookup,resolveUserAgent,enrichedPageView,')
+
+    def test_flow_from_webhandler_no_join(self):
+        # This is also possible as there could be global handlers. The join will be on parent message ID.
+        self.context.flow(self.context.message(messageType='pageView', url=url)) \
+            .handle(geoIPLookup) \
+            .schedule()
+
+        self.context.run()
+        self.assertEqual(self.stack, 'geoIPLookup,enrichedPageView,')

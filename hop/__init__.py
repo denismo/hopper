@@ -238,4 +238,6 @@ class Context(object):
     def publish(self, msg, queue=None):
         return self.spi.publish(msg, queue)
 
+    def flow(self, msg):
+        return MessageState(self, msg)
 
