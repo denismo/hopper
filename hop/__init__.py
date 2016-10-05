@@ -8,7 +8,6 @@ import yaml
 import collections
 logger = logging.getLogger("hopper.base")
 
-# TODO Message ID, parent/child
 # TODO Doc Comments and comments in code
 # TODO Unit test: Filter, Join, Collect, Merge
 # TODO Exception handling - if error occurs, message is retried X number of times
@@ -70,10 +69,33 @@ class Message(dict):
     def clone(self):
         return Message(self['messageType'], self)
 
-class Context(object):
+class ContextSPI(object):
     def __init__(self, config=None):
         self.config = config or ContextConfig()
+    
+    def _getTerminated(self):
+        raise NotImplemented("_getTerminated is not implemented by default")
+
+    def _getRequestCount(self):
+        raise NotImplemented("_getRequestCount is not implemented by default")
+
+    def _incrementRequestCount(self):
+        raise NotImplemented("_incrementRequestCount is not implemented by default")
+
+    def stop(self):
+        raise NotImplemented("stop is not implemented by default")
+
+    def forget(self, msgs):
+        raise NotImplemented("forget is not implemented by default")
+
+    def publish(self, msg, queue=None):
+        raise NotImplemented("publish is not implemented by default")
+
+class Context(object):
+    def __init__(self, config=None, spiClass=ContextSPI):
+        self.config = config or ContextConfig()
         self.rules = dict(filter=dict(), handler=dict(), join=dict())
+        self.spi = spiClass(config)
 
     ######### Internals ################
 
@@ -166,13 +188,13 @@ class Context(object):
     ######### Overides #########
 
     def _getTerminated(self):
-        raise NotImplemented("_getTerminated is not implemented by default")
+        return self.spi._getTerminated()
 
     def _getRequestCount(self):
-        raise NotImplemented("_getRequestCount is not implemented by default")
+        return self.spi._getRequestCount()
 
     def _incrementRequestCount(self):
-        raise NotImplemented("_incrementRequestCount is not implemented by default")
+        return self.spi._incrementRequestCount()
 
     ######### Wrappers #############
 
@@ -208,14 +230,12 @@ class Context(object):
         return Message(loaded['messageType'], loaded)
 
     def stop(self):
-        pass
+        return self.spi.stop()
 
     def forget(self, msgs):
-        pass
+        return self.spi.forget()
 
     def publish(self, msg, queue=None):
-        if self.terminated:
-            return
-
+        return self.spi.publish(msg, queue)
 
 

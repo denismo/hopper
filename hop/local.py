@@ -1,4 +1,4 @@
-from hop import Context
+from hop import Context, ContextSPI
 
 __author__ = 'Denis Mikhalkin'
 
@@ -13,14 +13,13 @@ class SparseList(list):
         try: return list.__getitem__(self, index)
         except IndexError: return None
 
-
-class LocalContext(Context):
+class LocalContextSPI(ContextSPI):
     def __init__(self, config=None):
-        Context.__init__(self, config)
+        ContextSPI.__init__(self, config)
         self.queues = SparseList()
         self.requestCount = 0
         self.terminated = False
-
+    
     def _incrementRequestCount(self):
         self.requestCount += 1
 
@@ -30,18 +29,6 @@ class LocalContext(Context):
     def _getTerminated(self):
         return self.terminated
 
-    def run(self):
-        while not self.terminated:
-            found = False
-            for index in range(len(self.queues)):
-                if self.terminated: return
-                queue = self.queues[index]
-                if queue is not None and len(queue) != 0:
-                    found = True
-                    self._process(queue.pop(0))
-                    break
-            if not found:
-                break
     def stop(self):
         self.terminated = True
 
@@ -67,4 +54,22 @@ class LocalContext(Context):
                     return index
                 index += 1
 
-        return 1
+        return 1        
+
+class LocalContext(Context):
+    def __init__(self, config=None):
+        Context.__init__(self, config, LocalContextSPI)
+
+    def run(self):
+        while not self._getTerminated():
+            found = False
+            for index in range(len(self.spi.queues)):
+                if self._getTerminated(): return
+                queue = self.spi.queues[index]
+                if queue is not None and len(queue) != 0:
+                    found = True
+                    self._process(queue.pop(0))
+                    break
+            if not found:
+                break
+
