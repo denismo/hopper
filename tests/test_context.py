@@ -1,6 +1,7 @@
 
 import sys
-sys.path.append('e:\\WS\\Hopper')
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), os.path.pardir))
 
 from hop.local import LocalContext
 

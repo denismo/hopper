@@ -28,7 +28,7 @@ logger = logging.getLogger("hopper.base")
 class ContextConfig(dict):
     def __init__(self, yamlObject=None):
         dict.__init__(self)
-        if yaml is not None:
+        if yamlObject is not None:
             self.update(yamlObject)
             for key, value in ContextConfig._traverse(yamlObject):
                 self[key] = value

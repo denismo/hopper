@@ -1,6 +1,5 @@
 
 import sys
-sys.path.append('e:\\WS\\Hopper')
 
 from hop.local import LocalContext
 
