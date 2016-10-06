@@ -72,6 +72,23 @@ class ContextTest(unittest.TestCase):
         self.context.run()
         self.assertTrue(passed[0])
                    
+    def test_parallel_callbacks(self):
+        passed = [False, False]
+
+        @self.context.handle('testMessage')
+        def handler(msg):
+            self.assertTrue(msg is not None)
+            passed[1] = True
+
+        @self.context.handle('testMessage')
+        def anotherHandler(msg):
+            self.assertTrue(msg is not None)
+            passed[0] = True
+        
+        self.context.publish(self.context.message(messageType='testMessage'))
+        self.context.run()
+        self.assertTrue(passed[0])
+        self.assertTrue(passed[1])
 
 if __name__ == '__main__':
     unittest.main()

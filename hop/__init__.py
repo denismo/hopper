@@ -1,11 +1,19 @@
 from __future__ import print_function
 __author__ = 'Denis Mikhalkin'
 
+try:
+    from flow import MessageState
+    from helpers import getGlobalCallback
+except:
+    from .flow import MessageState
+    from .helpers import getGlobalCallback
+
 import uuid
 import logging
 from datetime import datetime
 import yaml
 import collections
+import pkgutil
 logger = logging.getLogger("hopper.base")
 
 # TODO Doc Comments and comments in code
@@ -125,9 +133,10 @@ class Context(object):
             if (type(msg) == dict or type(msg) == Message) and 'messageType' in msg:
                 msg = self._filterMsg(msg)
                 if msg is not None:
-                    if self._containsRule(msg['messageType'], 'handler'):
-                        # TODO Error handling
-                        self._invokeRule(msg['messageType'], 'handler', msg)
+                    # if self._containsRule(msg['messageType'], 'handler'):
+                    #     print("Processing 7")
+                    #     # TODO Error handling
+                    self._invokeRule(msg['messageType'], 'handler', msg)
 
     def _filterMsg(self, msg):
         filters = self.rules['filter']
@@ -144,11 +153,9 @@ class Context(object):
     def _invokeRule(self, rule, kind, msg):
         if self._getTerminated(): return
 
-        callbacks = self.rules[kind][rule]
+        callbacks = self._callbacksForMessage(msg, kind)
         if callbacks is None or len(callbacks) == 0:
             return
-
-        callbacks = self._callbacksForMessage(callbacks, msg)
 
         callback = callbacks[0]
         try:
@@ -161,14 +168,18 @@ class Context(object):
             logger.debug('Publishing parallel message: %s', newMsg)
             self.publish(newMsg, 'priority')
 
-    def _callbacksForMessage(self, callbacks, msg):
-        if 'flow' in msg['_system'] and 'currentState' in msg['_system']['flow'] and 'callback' in msg['_system']['flow']['currentState']:
-            for callback in callbacks:
-                if callback.func_name == msg['_system']['flow']['currentState']['callback']:
-                    return [callback]
-            return []
+    def _callbacksForMessage(self, msg, kind):
+        step = MessageState.getCurrentStep(msg, None)
+        if step is not None and 'callback' in step:
+            for rule in self.rules[kind]:
+                for callback in self.rules[kind][rule]:                    
+                    if callback.__name__ == step['callback']:
+                        return [callback]
+            callback = getGlobalCallback(step['callback'])                
+            return [] if callback is None else [callback]
         else:
-            return callbacks
+            return self.rules[kind][msg['messageType']] if msg['messageType'] in self.rules[kind] else None
+
 
     def _callbackWrappedMessage(self, msg, callback):
         """
@@ -178,10 +189,10 @@ class Context(object):
         if 'flow' in callbackMsg['_system']:
             flow = callbackMsg['_system']['flow']
         else:
-            flow = {}
-        flow['currentState'] = {
+            flow = []
+        flow.append({'step': {
             'callback': callback.func_name
-        }
+        }})
         callbackMsg['_system']['flow'] = flow
         return callbackMsg
 
@@ -238,6 +249,6 @@ class Context(object):
     def publish(self, msg, queue=None):
         return self.spi.publish(msg, queue)
 
-    def flow(self, msg):
-        return MessageState(self, msg)
+    def flow(self, msg, queue=None):
+        return MessageState(self, msg, queue=queue)
 
